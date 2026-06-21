@@ -582,6 +582,54 @@ class UnbundlerApp:
             self.status_var.set(f"Done: {status}")
 
 
+def load_window_icon(root, icon_path):
+    """
+    Set the window/title-bar icon from a multi-resolution .ico file.
+
+    root.iconbitmap() is unreliable for this on Windows: depending on the
+    Tk/Tcl build, it often only honors a single frame from the .ico (and
+    that frame isn't always the largest one), which is why a properly
+    multi-size icon can still show up blurry or tiny in the title bar.
+    Loading each frame explicitly via Pillow and handing the full list to
+    iconphoto() lets Tk pick the right resolution per context instead.
+    """
+    try:
+        from PIL import Image, ImageTk
+    except ImportError:
+        # Pillow not available, fall back to the old (less reliable) method
+        try:
+            root.iconbitmap(icon_path)
+        except tk.TclError:
+            pass
+        return
+
+    try:
+        ico = Image.open(icon_path)
+        photos = []
+        sizes = getattr(ico, "info", {}).get("sizes") or [(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)]
+        for size in sorted(set(sizes), reverse=True):
+            frame = Image.open(icon_path)
+            frame.size = size
+            frame.load()
+            try:
+                frame = frame.convert("RGBA")
+            except Exception:
+                pass
+            photos.append(ImageTk.PhotoImage(frame))
+
+        if photos:
+            # keep references alive, otherwise Tk garbage-collects them
+            # and the icon silently reverts to the default
+            root._icon_photo_refs = photos
+            root.iconphoto(True, *photos)
+    except Exception:
+        # last resort fallback
+        try:
+            root.iconbitmap(icon_path)
+        except tk.TclError:
+            pass
+
+
 def resource_path(relative_path):
     """
     Resolve a path that works both when running unbundler.py directly and
@@ -603,10 +651,7 @@ def main():
 
     icon_path = resource_path(os.path.join("media", "icon.ico"))
     if os.path.exists(icon_path):
-        try:
-            root.iconbitmap(icon_path)
-        except tk.TclError:
-            pass  # icon failed to load, just keep tkinter's default
+        load_window_icon(root, icon_path)
 
     app = UnbundlerApp(root)
     root.mainloop()

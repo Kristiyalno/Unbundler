@@ -1,6 +1,6 @@
 # PyInstaller build artifacts
 build/
-dist/
+# dist/
 *.spec
 __pycache__/
 *.pyc
