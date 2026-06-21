@@ -1,0 +1,17 @@
+# PyInstaller build artifacts
+build/
+dist/
+*.spec
+__pycache__/
+*.pyc
+
+# Unity-style build output folders
+StandaloneWindows64/
+StandaloneWindows/
+StandaloneOSX/
+StandaloneLinux64/
+
+# OS/editor cruft
+.DS_Store
+Thumbs.db
+.vscode/
