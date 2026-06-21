@@ -352,15 +352,20 @@ class UnbundlerApp:
 
         help_row = ttk.Frame(settings_frame)
         help_row.pack(fill="x", padx=8, pady=(0, 6))
-        ttk.Label(
+        self.help_label = ttk.Label(
             help_row,
-            text="%  = bundle name      &  = kind (asset, spriteatlas, ...)      *  = content (img, vid+aud, ...)\n"
+            text="%  = bundle name      &  = kind (asset, spriteatlas, ...)      *  = content (img, vid+aud, ...)  "
                  "Type any brackets/symbols around them yourself, e.g. [&] or (*). Missing a placeholder "
                  "(no kind, or failed extraction) removes it and one surrounding [ ] ( ) { } pair automatically.",
             foreground="#666",
             justify="left",
             font=("TkDefaultFont", 8),
-        ).pack(side="left", anchor="w")
+            wraplength=660,
+        )
+        self.help_label.pack(side="left", anchor="w", fill="x", expand=True)
+        # keep wraplength in sync with the actual window width so the text
+        # reflows instead of clipping when the window is resized
+        root.bind("<Configure>", self._on_resize_help_label)
 
         self.start_btn = ttk.Button(root, text="Extract", command=self.start_extraction, state="disabled")
         self.start_btn.pack(**pad)
@@ -389,6 +394,13 @@ class UnbundlerApp:
         if shutil.which("ffmpeg") is None:
             self.log("WARNING: ffmpeg not found on PATH. Video+audio muxing will be skipped "
                       "(video and audio will still be extracted as separate files).", error=True)
+
+    def _on_resize_help_label(self, event):
+        # only react to the root window resizing, not every child widget's
+        # own Configure events, and leave some padding on each side
+        if event.widget is self.root:
+            new_width = max(event.width - 40, 200)
+            self.help_label.configure(wraplength=new_width)
 
     def build_folder_name(self, bundle_basename, kind, content_tag, status):
         """
@@ -570,6 +582,17 @@ class UnbundlerApp:
             self.status_var.set(f"Done: {status}")
 
 
+def resource_path(relative_path):
+    """
+    Resolve a path that works both when running unbundler.py directly and
+    when running from a PyInstaller-built exe. PyInstaller extracts bundled
+    data files to a temporary folder at runtime and exposes it as
+    sys._MEIPASS; outside of that, just resolve relative to this script.
+    """
+    base_path = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
+
+
 def main():
     root = tk.Tk()
     style = ttk.Style()
@@ -577,6 +600,14 @@ def main():
         style.theme_use("clam")
     except tk.TclError:
         pass
+
+    icon_path = resource_path(os.path.join("media", "icon.ico"))
+    if os.path.exists(icon_path):
+        try:
+            root.iconbitmap(icon_path)
+        except tk.TclError:
+            pass  # icon failed to load, just keep tkinter's default
+
     app = UnbundlerApp(root)
     root.mainloop()
 
