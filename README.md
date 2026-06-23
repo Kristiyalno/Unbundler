@@ -30,8 +30,8 @@ unity-bundle-unbundler/
   media/
     icon.ico          window/exe icon
     oldicon.ico       previous icon (unused)
-    339.png           screenshot
-    339.webp          screenshot (webp)
+    339.png           original icon source (from Unity Assets Bundle Extractor Avalonia)
+    339.webp          original icon source (webp)
   dist/
     UnityBundleUnbundler.exe  prebuilt Windows executable
   README.md
