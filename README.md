@@ -103,7 +103,10 @@ You can package this into a single `.exe` with [PyInstaller](https://pyinstaller
 
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --windowed --icon=media\icon.ico --add-data "media;media" --collect-all UnityPy --collect-all texture2ddecoder --collect-all astc_encoder_py --collect-all etcpak --collect-all fmod_toolkit --name "UnityBundleUnbundler" unbundler.py
+```
+
+```bash
+pyinstaller --onefile --windowed --icon=media\icon.ico --add-data "media;media" --collect-all UnityPy --collect-all texture2ddecoder --collect-all astc_encoder_py --collect-all etcpak --collect-all archspec --name "UnityBundleUnbundler" unbundler.py
 ```
 
 The finished `.exe` is in `dist/UnityBundleUnbundler.exe`.
