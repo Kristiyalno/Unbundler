@@ -88,7 +88,6 @@ def extract_bundle(bundle_path, out_dir, log_fn):
         bundle_file = None
 
     image_count = 0
-    audio_count = 0
     text_count = 0
     font_count = 0
     raw_count = 0
@@ -222,41 +221,39 @@ def extract_bundle(bundle_path, out_dir, log_fn):
 
     if video_clips or audio_clips:
         os.makedirs(raw_dir, exist_ok=True)
+        try:
+            for vname, vbytes in video_clips:
+                fname = safe_name(vname, "video", ".mp4")
+                p = dedupe_path(os.path.join(raw_dir, fname))
+                with open(p, "wb") as f:
+                    f.write(vbytes)
+                raw_video_paths.append(p)
 
-        for vname, vbytes in video_clips:
-            fname = safe_name(vname, "video", ".mp4")
-            p = dedupe_path(os.path.join(raw_dir, fname))
-            with open(p, "wb") as f:
-                f.write(vbytes)
-            raw_video_paths.append(p)
+            for aname, fname, abytes in audio_clips:
+                safe_fname = safe_name(fname, aname or "audio", ".wav")
+                p = dedupe_path(os.path.join(raw_dir, safe_fname))
+                with open(p, "wb") as f:
+                    f.write(abytes)
+                raw_audio_paths.append(p)
 
-        for aname, fname, abytes in audio_clips:
-            safe_fname = safe_name(fname, aname or "audio", ".wav")
-            p = dedupe_path(os.path.join(raw_dir, safe_fname))
-            with open(p, "wb") as f:
-                f.write(abytes)
-            raw_audio_paths.append(p)
-
-        n = max(len(raw_video_paths), len(raw_audio_paths))
-        for i in range(n):
-            has_v = i < len(raw_video_paths)
-            has_a = i < len(raw_audio_paths)
-            if has_v and has_a:
-                base = os.path.splitext(os.path.basename(raw_video_paths[i]))[0]
-                out_path = dedupe_path(os.path.join(out_dir, base + ".mp4"))
-                ok = mux(raw_video_paths[i], raw_audio_paths[i], out_path)
-                if ok:
-                    audio_count += 1  # counts as combined export
-                else:
-                    # fall back: copy video-only, copy audio-only separately
-                    shutil.copy(raw_video_paths[i], dedupe_path(os.path.join(out_dir, base + ".mp4")))
+            n = max(len(raw_video_paths), len(raw_audio_paths))
+            for i in range(n):
+                has_v = i < len(raw_video_paths)
+                has_a = i < len(raw_audio_paths)
+                if has_v and has_a:
+                    base = os.path.splitext(os.path.basename(raw_video_paths[i]))[0]
+                    out_path = dedupe_path(os.path.join(out_dir, base + ".mp4"))
+                    ok = mux(raw_video_paths[i], raw_audio_paths[i], out_path)
+                    if not ok:
+                        # fall back: copy video-only, copy audio-only separately
+                        shutil.copy(raw_video_paths[i], dedupe_path(os.path.join(out_dir, base + ".mp4")))
+                        shutil.copy(raw_audio_paths[i], dedupe_path(os.path.join(out_dir, os.path.basename(raw_audio_paths[i]))))
+                elif has_v:
+                    shutil.copy(raw_video_paths[i], dedupe_path(os.path.join(out_dir, os.path.basename(raw_video_paths[i]))))
+                elif has_a:
                     shutil.copy(raw_audio_paths[i], dedupe_path(os.path.join(out_dir, os.path.basename(raw_audio_paths[i]))))
-            elif has_v:
-                shutil.copy(raw_video_paths[i], dedupe_path(os.path.join(out_dir, os.path.basename(raw_video_paths[i]))))
-            elif has_a:
-                shutil.copy(raw_audio_paths[i], dedupe_path(os.path.join(out_dir, os.path.basename(raw_audio_paths[i]))))
-
-        shutil.rmtree(raw_dir, ignore_errors=True)
+        finally:
+            shutil.rmtree(raw_dir, ignore_errors=True)
 
     parts = []
     tag_bits = []
@@ -441,13 +438,14 @@ class UnbundlerApp:
         return result.strip() or bundle_basename
 
     def log(self, msg, error=False):
-        self.log_box.configure(state="normal")
-        tag = "error" if error else "normal"
-        self.log_box.insert("end", msg + "\n", tag)
-        self.log_box.tag_config("error", foreground="#f48771")
-        self.log_box.see("end")
-        self.log_box.configure(state="disabled")
-        self.root.update_idletasks()
+        def _write():
+            self.log_box.configure(state="normal")
+            tag = "error" if error else "normal"
+            self.log_box.insert("end", msg + "\n", tag)
+            self.log_box.tag_config("error", foreground="#f48771")
+            self.log_box.see("end")
+            self.log_box.configure(state="disabled")
+        self.root.after(0, _write)
 
     def pick_file(self):
         path = filedialog.askopenfilename(
@@ -521,7 +519,7 @@ class UnbundlerApp:
                 kind = ""
                 if bundle_basename.lower().endswith((".asset", ".spriteatlas")):
                     bundle_basename, kind_ext = os.path.splitext(bundle_basename)
-                    kind = kind_ext.lstrip(".")
+                    kind = kind_ext.lstrip(".").lower()
 
                 self.status_var.set(f"[{i}/{len(bundles)}] {rel}")
                 self.log(f"[{i}/{len(bundles)}] {rel}")
@@ -605,17 +603,19 @@ def load_window_icon(root, icon_path):
 
     try:
         ico = Image.open(icon_path)
+        n_frames = getattr(ico, "n_frames", 1)
         photos = []
-        sizes = getattr(ico, "info", {}).get("sizes") or [(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)]
-        for size in sorted(set(sizes), reverse=True):
-            frame = Image.open(icon_path)
-            frame.size = size
-            frame.load()
+        for idx in range(n_frames):
             try:
-                frame = frame.convert("RGBA")
+                ico.seek(idx)
+                frame = ico.copy()
+                try:
+                    frame = frame.convert("RGBA")
+                except Exception:
+                    pass
+                photos.append(ImageTk.PhotoImage(frame))
             except Exception:
                 pass
-            photos.append(ImageTk.PhotoImage(frame))
 
         if photos:
             # keep references alive, otherwise Tk garbage-collects them
