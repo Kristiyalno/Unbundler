@@ -485,7 +485,7 @@ class UnbundlerApp:
             self.log("FATAL ERROR:\n" + traceback.format_exc(), error=True)
             self.status_var.set("Failed")
         finally:
-            self.start_btn.configure(state="normal")
+            self.root.after(0, lambda: self.start_btn.configure(state="normal"))
 
     def _run_extraction_inner(self):
         src = self.selected_path

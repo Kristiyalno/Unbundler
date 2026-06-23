@@ -31,7 +31,7 @@ unity-bundle-unbundler/
     339.png           original icon source (from Unity Assets Bundle Extractor Avalonia)
     339.webp          original icon source (webp)
   failedexe/
-    UnityBundleUnbundler.exe  prebuilt Windows executable that does not work
+    UnityBundleUnbundler.exe  prebuilt Windows executable (broken, do not use)
   README.md
   .gitignore
 ```
@@ -39,13 +39,16 @@ unity-bundle-unbundler/
 ## Requirements
 
 - Python 3
-- [UnityPy](https://pypi.org/project/UnityPy/)
+- `tkinter` (ships with standard Python on Windows and Mac; on Linux: `sudo apt install python3-tk`)
 - [ffmpeg](https://ffmpeg.org/) on your `PATH` (only needed for video+audio muxing; everything else still works without it)
-- `tkinter` (ships with standard Python on Windows/Mac; on Linux: `sudo apt install python3-tk`)
+
+Install the Python dependencies with pip:
 
 ```bash
-pip install UnityPy
+pip install UnityPy Pillow
 ```
+
+`UnityPy` handles bundle parsing and asset extraction. `Pillow` is used for loading the window icon at full quality; the app still runs without it but the title bar icon may look wrong.
 
 ## Usage
 
@@ -100,6 +103,7 @@ Built on [UnityPy](https://github.com/K0lb3/UnityPy) for parsing Unity's seriali
 I was not able to produce a working executable. The prebuilt `failedexe/UnityBundleUnbundler.exe` is broken: UnityPy's native decoders fail at runtime inside a PyInstaller-frozen environment due to a missing `fmod.dll` dependency that cannot be resolved without the dll being installed on the build machine. Image and audio extraction both fail as a result.
 
 Run from source instead. See [Usage](#usage).
+
 
 ## Credits
 
