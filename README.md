@@ -6,9 +6,7 @@ Pick a single bundle file or a whole folder, and it pulls out everything it can 
 
 ## Download
 
-A prebuilt Windows executable is included in [`dist/UnityBundleUnbundler.exe`](https://github.com/Kristiyalno/Unbundler/raw/main/dist/UnityBundleUnbundler.exe). No Python install required to use it.
-
-To run from source instead, see [Usage](#usage) below.
+To run from source, see [Usage](#usage) below.
 
 ## Features
 
@@ -32,8 +30,8 @@ unity-bundle-unbundler/
     oldicon.ico       previous icon (unused)
     339.png           original icon source (from Unity Assets Bundle Extractor Avalonia)
     339.webp          original icon source (webp)
-  dist/
-    UnityBundleUnbundler.exe  prebuilt Windows executable
+  failedexe/
+    UnityBundleUnbundler.exe  prebuilt Windows executable that does not work
   README.md
   .gitignore
 ```
@@ -99,36 +97,9 @@ Built on [UnityPy](https://github.com/K0lb3/UnityPy) for parsing Unity's seriali
 
 ## Building a standalone .exe (Windows)
 
-You can package this into a single `.exe` with [PyInstaller](https://pyinstaller.org/) so it runs without a Python install.
+I was not able to produce a working executable. The prebuilt `failedexe/UnityBundleUnbundler.exe` is broken: UnityPy's native decoders fail at runtime inside a PyInstaller-frozen environment due to a missing `fmod.dll` dependency that cannot be resolved without the dll being installed on the build machine. Image and audio extraction both fail as a result.
 
-```bash
-pip install pyinstaller
-```
-
-```bash
-pyinstaller --onefile --windowed --icon=media\icon.ico --add-data "media;media" --collect-all UnityPy --collect-all texture2ddecoder --collect-all astc_encoder_py --collect-all etcpak --collect-all archspec --name "UnityBundleUnbundler" unbundler.py
-```
-
-The finished `.exe` is in `dist/UnityBundleUnbundler.exe`.
-
-**Why `--collect-all` is required:** UnityPy (and its texture-decoding dependencies) use dynamic imports that PyInstaller's static analyzer can miss. Without `--collect-all`, the build succeeds but UnityPy ends up missing at runtime, showing as "UnityPy is not installed" even though it's installed fine outside the exe. `--collect-all` forces those packages to be bundled in full instead of relying on import detection.
-
-**Why `--add-data "media;media"` is required:** the app also loads `media/icon.ico` at runtime to set the window's title bar icon (separately from the exe's own file icon set via `--icon`). `--add-data` makes sure that file actually ships inside the exe; without it, the window icon silently falls back to tkinter's default. On Mac/Linux builds, use a colon instead of a semicolon: `--add-data "media:media"`.
-
-**Icon file format:** `media/icon.ico` needs to be a real `.ico`, not a renamed `.png`. If you only have a PNG, convert it first:
-
-```python
-from PIL import Image
-Image.open("icon.png").save("media/icon.ico", sizes=[(256,256),(128,128),(64,64),(48,48),(32,32),(16,16)])
-```
-
-**If the built exe still shows the default icon after a successful build**, this is almost always Windows Explorer's icon cache, not a broken build. Restart Explorer or clear the icon cache (`del /a /q "%localappdata%\IconCache.db"` from an elevated prompt, then restart `explorer.exe`) and check again. Right-click → Properties on the exe is a more reliable way to confirm the icon is actually embedded, since it bypasses some of Explorer's thumbnail caching.
-
-**ffmpeg is not bundled** by PyInstaller since it's an external binary, not a Python package. Anyone running the `.exe` still needs `ffmpeg` on their system PATH for video+audio muxing; without it, video and audio are still extracted, just as separate files instead of one combined `.mp4`.
-
-## Repo hygiene
-
-If you build the `.exe` inside this repo's folder, make sure `build/`, `dist/`, and `*.spec` aren't committed. A `.gitignore` covering those (plus any Unity-style `StandaloneWindows64/`-type build output) is included.
+Run from source instead. See [Usage](#usage).
 
 ## Credits
 
