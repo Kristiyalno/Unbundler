@@ -483,7 +483,7 @@ class UnbundlerApp:
             self._run_extraction_inner()
         except Exception:
             self.log("FATAL ERROR:\n" + traceback.format_exc(), error=True)
-            self.status_var.set("Failed")
+            self.root.after(0, lambda: self.status_var.set("Failed"))
         finally:
             self.root.after(0, lambda: self.start_btn.configure(state="normal"))
 
@@ -521,7 +521,7 @@ class UnbundlerApp:
                     bundle_basename, kind_ext = os.path.splitext(bundle_basename)
                     kind = kind_ext.lstrip(".").lower()
 
-                self.status_var.set(f"[{i}/{len(bundles)}] {rel}")
+                self.root.after(0, lambda v=f"[{i}/{len(bundles)}] {rel}": self.status_var.set(v))
                 self.log(f"[{i}/{len(bundles)}] {rel}")
 
                 # extract into a temp holding dir first since the final folder
@@ -552,7 +552,7 @@ class UnbundlerApp:
                 self.progress.configure(value=i)
 
             self.log(f"\nDone. {ok_count} extracted, {empty_count} empty, {fail_count} failed.")
-            self.status_var.set(f"Done: {ok_count} extracted, {empty_count} empty, {fail_count} failed")
+            self.root.after(0, lambda v=f"Done: {ok_count} extracted, {empty_count} empty, {fail_count} failed": self.status_var.set(v))
 
         else:
             parent = os.path.dirname(src)
@@ -563,7 +563,7 @@ class UnbundlerApp:
             os.makedirs(out_root, exist_ok=True)
 
             self.progress.configure(maximum=1, value=0)
-            self.status_var.set(f"Extracting {base}...")
+            self.root.after(0, lambda v=f"Extracting {base}...": self.status_var.set(v))
             self.log(f"Extracting: {src}")
             self.log(f"Output folder: {out_root}\n")
 
@@ -577,7 +577,7 @@ class UnbundlerApp:
                 except OSError:
                     pass
 
-            self.status_var.set(f"Done: {status}")
+            self.root.after(0, lambda v=f"Done: {status}": self.status_var.set(v))
 
 
 def load_window_icon(root, icon_path):
