@@ -501,7 +501,7 @@ class UnbundlerApp:
             self.log(f"Found {len(bundles)} .bundle file(s) under: {src}")
             self.log(f"Output folder: {out_root}\n")
 
-            self.progress.configure(maximum=max(len(bundles), 1), value=0)
+            self.root.after(0, lambda m=max(len(bundles), 1): self.progress.configure(maximum=m, value=0))
 
             ok_count = 0
             empty_count = 0
@@ -549,7 +549,7 @@ class UnbundlerApp:
                     fail_count += 1
                     shutil.rmtree(tmp_dir, ignore_errors=True)
 
-                self.progress.configure(value=i)
+                self.root.after(0, lambda v=i: self.progress.configure(value=v))
 
             self.log(f"\nDone. {ok_count} extracted, {empty_count} empty, {fail_count} failed.")
             self.root.after(0, lambda v=f"Done: {ok_count} extracted, {empty_count} empty, {fail_count} failed": self.status_var.set(v))
@@ -562,14 +562,14 @@ class UnbundlerApp:
             out_root = dedupe_path(os.path.join(parent, out_dir_name))
             os.makedirs(out_root, exist_ok=True)
 
-            self.progress.configure(maximum=1, value=0)
+            self.root.after(0, lambda: self.progress.configure(maximum=1, value=0))
             self.root.after(0, lambda v=f"Extracting {base}...": self.status_var.set(v))
             self.log(f"Extracting: {src}")
             self.log(f"Output folder: {out_root}\n")
 
             status, detail, content_tag = extract_bundle(src, out_root, self.log)
             self.log(f"{status}: {detail}")
-            self.progress.configure(value=1)
+            self.root.after(0, lambda: self.progress.configure(value=1))
 
             if status == "EMPTY":
                 try:
