@@ -6,8 +6,7 @@ Pick a single bundle file or a whole folder, and it pulls out everything it can 
 
 ## Download
 
-<!-- If you're distributing a prebuilt .exe, link it here, e.g.: -->
-<!-- Grab the latest build from the [Releases](../../releases) page. No Python install required. -->
+A prebuilt Windows executable is included in `dist/UnityBundleUnbundler.exe`. No Python install required to use it.
 
 To run from source instead, see [Usage](#usage) below.
 
@@ -30,6 +29,11 @@ unity-bundle-unbundler/
   unbundler.py        the application
   media/
     icon.ico          window/exe icon
+    oldicon.ico       previous icon (unused)
+    339.png           screenshot
+    339.webp          screenshot (webp)
+  dist/
+    UnityBundleUnbundler.exe  prebuilt Windows executable
   README.md
   .gitignore
 ```
@@ -85,7 +89,7 @@ Type any characters you want around the placeholders, brackets, dashes, undersco
 | `&-*-%` | `asset-vid+aud-doctor_cure` |
 | `%` | `doctor_cure` |
 
-If a bundle has no kind (no middle extension) or extraction fails, that placeholder is dropped along with one immediately surrounding bracket/paren pair, so `[&]` cleanly disappears instead of leaving stray empty brackets.
+If a bundle has no kind (no middle extension), `&` is dropped. If extraction did not succeed or the bundle was empty, `*` is dropped. In both cases, one immediately surrounding bracket/paren pair is also removed, so `[&]` cleanly disappears instead of leaving stray empty brackets.
 
 ## How it works
 
