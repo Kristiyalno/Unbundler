@@ -6,7 +6,7 @@ Pick a single bundle file or a whole folder, and it pulls out everything it can 
 
 ## Download
 
-A prebuilt Windows executable is included in `dist/UnityBundleUnbundler.exe`. No Python install required to use it.
+A prebuilt Windows executable is included in [`dist/UnityBundleUnbundler.exe`](https://github.com/Kristiyalno/Unbundler/raw/main/dist/UnityBundleUnbundler.exe). No Python install required to use it.
 
 To run from source instead, see [Usage](#usage) below.
 
@@ -65,6 +65,8 @@ Output is written next to whatever you selected:
 Your original files are never modified.
 
 ## Naming output folders
+
+This section only applies to **folder mode**. In single-file mode, the output folder is always named `unbundled_<bundle name>` and the template is not used.
 
 In folder mode, each bundle gets its own output subfolder. By default these would all look identical (just the bundle's own name), so the tool builds the folder name from a **format template** you can edit directly in the app:
 
